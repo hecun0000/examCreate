@@ -13,9 +13,16 @@ let jsonConfig = null
 if (isConfigExist) {
   jsonConfig = JSON.parse(fs.readFileSync(configPath, "utf8"))
 } else {
-  console.log('请填写配置信息！！！！')
+  console.log('未读取到config信息， 将使用默认配置信息！')
+  jsonConfig = {
+    "ratio": 0.4,
+    "multipleChoice": 20,
+    "singleChoice": 20,
+    "booleanQuestion": 20
+  }
+
 }
-console.log('读取配置信息： ', jsonConfig)
+console.log('配置信息： ', jsonConfig)
 
 const { ratio,  ...order} = jsonConfig
 
