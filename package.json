@@ -4,8 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron .",
     "dev": "node ./tools.js",
     "build": "pkg tools.js  -o 随机生成试卷"
   },
