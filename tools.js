@@ -1,7 +1,7 @@
-var xlsx = require('node-xlsx')
+const xlsx = require('node-xlsx')
 const officegen = require('officegen')
-var fs = require('fs')
-var _ = require('lodash')
+const fs = require('fs')
+const _ = require('lodash')
 
 const path = require("path")
 
@@ -11,23 +11,20 @@ let isConfigExist = fs.existsSync(configPath)
 
 let jsonConfig = null
 if (isConfigExist) {
-    jsonConfig = JSON.parse(fs.readFileSync(configPath, "utf8"))
+  jsonConfig = JSON.parse(fs.readFileSync(configPath, "utf8"))
+} else {
+  console.log('请填写配置信息！！！！')
 }
+console.log('读取配置信息： ', jsonConfig)
 
+const { ratio,  ...order} = jsonConfig
 
-console.log(jsonConfig)
+const {singleChoice, multipleChoice, booleanQuestion} = order
 
-const { ratio,singleChoice, multipleChoice, booleanQuestion} = jsonConfig
-
-
-
-var sheets = xlsx.parse('./知识测试题库.xlsx')
+const sheets = xlsx.parse('./知识测试题库.xlsx')
 const poolData = []
 sheets.forEach(function (sheet) {
-  const {
-    name,
-    list
-  } = alterData(sheet)
+  const { list } = alterData(sheet)
   const questByTypeData = questionByType(list)
   poolData.push(questByTypeData)
 });
@@ -35,14 +32,13 @@ sheets.forEach(function (sheet) {
 const examQuestions = getTest(poolData, ratio)
 
 // 生成文件
-createWord(examQuestions)
-
+createWord(examQuestions, order)
 
 // 转化数据
 function alterData(sheet) {
   const list = []
-  for (var i = 2; i < sheet["data"].length; i++) {
-    var row = sheet['data'][i];
+  for (let i = 2; i < sheet["data"].length; i++) {
+    const row = sheet['data'][i];
     if (row && row.length > 0) {
       const arr = row.slice(3, 9)
       list.push({
@@ -61,7 +57,7 @@ function alterData(sheet) {
   }
 }
 // 生成word
-function createWord(list, name = 'test') {
+function createWord(list, order) {
   let docx = officegen('docx')
   const date = new Date()
   const year = date.getFullYear()
@@ -70,9 +66,7 @@ function createWord(list, name = 'test') {
   const time = date.getTime()
 
   docx.on('finalize', function (written) {
-    console.log(
-      '试题已经生成，请查看！'
-    )
+    console.log('试题已经生成，请查看！')
   })
 
   docx.on('error', function (err) {
@@ -81,24 +75,62 @@ function createWord(list, name = 'test') {
   const wordTitle = '知识测试题'
   // 生成标题
   createTitle(docx, wordTitle)
-  // 生成单选题
-  creatSingleQuestion(examQuestions.single, docx)
-  // 生成不定项选择题
-  creatMultipleQuestion(examQuestions.multiple, docx)
-  // 生成判断题
-  creatBoolQuestion(examQuestions.bool, docx)
+  // console.log(list)
+  // 生成题目
+  createTestByOrder(order, list, docx)
 
   // 导出word
-  let out = fs.createWriteStream(wordTitle + year + '-' + month + '-' + day +  '_' + time +'.docx')
+  let out = fs.createWriteStream(wordTitle + year + '-' + month + '-' + day + '_' + time + '.docx')
   out.on('error', function (err) {
     console.log(err)
   })
   docx.generate(out)
 }
+
+// 按顺序生成题目
+function createTestByOrder(order, list, docx) {
+  const orderList = {
+    singleChoice: 'single',
+    multipleChoice: 'multiple',
+    booleanQuestion: 'bool',
+  }
+  const numberTxt = ['一', '二', '三']
+  const orderArr = []
+  Object.keys(order).forEach(key => {
+    if (order[key] > 0) orderArr.push(key)
+  })
+  orderArr.forEach((item, index) => {
+    const numText = numberTxt[index]
+    const type = orderList[item]
+    switch (type) {
+      case 'single':
+        // 生成单选题
+        if (list.single) {
+          creatSingleQuestion(list.single, docx, numText)
+        }
+        break;
+      case 'multiple':
+        // 生成不定项选择题
+        if (list.multiple) {
+          creatMultipleQuestion(list.multiple, docx, numText)
+        }
+        break;
+      case 'bool':
+        // 生成判断题
+        if (list.bool) {
+          creatBoolQuestion(list.bool, docx, numText)
+        }
+        break;
+      default:
+        break;
+    }
+  })
+}
+
 // 生成单选题
-function creatSingleQuestion(list, docx) {
+function creatSingleQuestion(list, docx, numText) {
   const contentP = docx.createP()
-  contentP.addText(`一、	单选题（每题1分，共${singleChoice}分，请将答案填写进下方表格中）`, {
+  contentP.addText(numText + `、	单选题（每题1分，共${singleChoice}分，请将答案填写进下方表格中）`, {
     font_size: 12,
     bold: true,
     font_face: '微软雅黑',
@@ -109,9 +141,9 @@ function creatSingleQuestion(list, docx) {
   }
 }
 // 生成不定项选择题
-function creatMultipleQuestion(list, docx) {
+function creatMultipleQuestion(list, docx, numText) {
   const contentP = docx.createP()
-  contentP.addText(`二、	多选题（每题2分，共${multipleChoice * 2}分，请将答案填写进下方表格中）`, {
+  contentP.addText(numText + `、	多选题（每题2分，共${multipleChoice * 2}分，请将答案填写进下方表格中）`, {
     font_size: 12,
     bold: true,
     font_face: '微软雅黑',
@@ -122,20 +154,18 @@ function creatMultipleQuestion(list, docx) {
   }
 }
 // 生成判断题
-function creatBoolQuestion(list, docx) {
+function creatBoolQuestion(list, docx, numText) {
   const contentP = docx.createP()
-  contentP.addText(`三、	判断题（每题1分，共${booleanQuestion}分，请填写“√”或“×”至下方表格）`, {
+  contentP.addText(numText + `、	判断题（每题1分，共${booleanQuestion}分，请填写“√”或“×”至下方表格）`, {
     font_size: 12,
     bold: true,
     font_face: '微软雅黑',
     align: "center"
   })
-  // 三、	判断题（每题1分，共15分，请填写“√”或“×”至下方表格）
   for (let i = 0; i < list.length; i++) {
     createJudgeQuestion(list[i], docx, i)
   }
 }
-
 
 // 题目分类
 function questionByType(list) {
@@ -154,10 +184,8 @@ function questionByType(list) {
       res[type] = [list[i]]
     }
   }
-
   return res
 }
-
 
 // 生成标题
 function createTitle(docx, wordTitle) {
@@ -183,7 +211,7 @@ function createJudgeQuestion(list, docx, index) {
     font_face: '微软雅黑',
     align: "center"
   })
-  const ansTxt = ans === 'A' ? '√':'×'
+  const ansTxt = ans === 'A' ? '√' : '×'
   createAns(ansTxt, docx)
   createSource(list, docx)
 }
@@ -198,10 +226,9 @@ function createAns(ans, docx) {
   })
 }
 
-
 // 生成题目来源
 function createSource(list, docx) {
-  const {sheetName, number} = list
+  const { sheetName, number } = list
   const contentP = docx.createP()
   contentP.addText('题目来源: ' + sheetName + '[' + number + ']', {
     font_size: 10,
@@ -210,16 +237,9 @@ function createSource(list, docx) {
   })
 }
 
-
 // 选择题生成
 function createOtherQuestion(list, docx, index) {
-  const {
-    number,
-    content,
-    type,
-    ansArr,
-    ans
-  } = list
+  const { content, type, ansArr, ans } = list
   const contentP = docx.createP()
   contentP.addText((index + 1) + '、' + content, {
     font_size: 10,
@@ -243,7 +263,6 @@ function createOtherQuestion(list, docx, index) {
   createAns(ans, docx)
   createSource(list, docx)
 }
-
 
 //从一个给定的数组arr中,随机返回num个不重复项
 function getArrayItems(arr, num) {
@@ -302,5 +321,5 @@ function createQuestionByType(poolData, questionNums, type) {
   const firstPool = getArrayItems(firstData[type], singleFirst)
   const secondPool = getArrayItems(secondData[type], secondFirst)
   const questionPool = [...firstPool, ...secondPool]
-  return _.shuffle(questionPool) 
+  return questionPool.length > 0 ? _.shuffle(questionPool) : null
 }

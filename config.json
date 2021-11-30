@@ -1,6 +1,6 @@
 {
   "ratio": 0,
-  "singleChoice": 30,
-  "multipleChoice": 30,
-  "booleanQuestion": 30
+  "singleChoice": 20,
+  "multipleChoice": 20,
+  "booleanQuestion": 20
 }
