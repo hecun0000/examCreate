@@ -1,0 +1,7 @@
+{
+  "ratio": 0,
+  "singleChoice": 30,
+  "multipleChoice": 1,
+  "booleanQuestion": 1,
+  "order": ["singleChoice", "multipleChoice", "booleanQuestion"]
+}
