@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to generated tes- questions 👋</h1>
+<h1 align="center">Welcome to generated test questions 👋</h1>
 <p>
   <a href="https://www.npmjs.com/package/generated tes- questions" target="_blank">
     <img alt="Version" src="https://img.shields.io/npm/v/generated tes- questions.svg">
